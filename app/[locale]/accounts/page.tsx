@@ -12,12 +12,14 @@ const AccountPage = () => {
   const { accounts, q, currentPage, itemsPerPage } = useSelector((state: RootState) =>  state.accounts);
   const dispatch = useDispatch();
   const t = useTranslations('Account');
-  const totalPages = Math.ceil(accounts.length / itemsPerPage);
 
   const filteredAccounts = accounts.filter((account) => 
     account.firstname.toLocaleLowerCase().includes(q) ||
     account.lastname.toLocaleLowerCase().includes(q)
   );
+
+  let totalPages = Math.ceil(filteredAccounts.length / itemsPerPage);
+  totalPages = totalPages <= 0 ? 1 : totalPages;
 
   const startIndex = (currentPage * itemsPerPage) - itemsPerPage;
   const lastIndex = (currentPage * itemsPerPage);
@@ -27,7 +29,7 @@ const AccountPage = () => {
     dispatch(deleteAccount(id));
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSetQuery = (e: React.ChangeEvent<HTMLInputElement>) => {
     dispatch(setQuery(e.currentTarget.value));
   };
 
@@ -37,7 +39,7 @@ const AccountPage = () => {
     dispatch(setCurrentPage(page));
   };
 
-  const handleNext= (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleNext = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     const page = (currentPage + 1 > totalPages ? currentPage : currentPage + 1);
     dispatch(setCurrentPage(page));
@@ -63,7 +65,7 @@ const AccountPage = () => {
           type="text"
           className="form-control"
           placeholder={t('search')}
-          onChange={handleChange}
+          onChange={handleSetQuery}
           value={q} />
       </div>
       <AccountsList
