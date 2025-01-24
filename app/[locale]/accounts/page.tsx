@@ -3,22 +3,44 @@
 import AccountsList from "@/app/ui/accounts/accounts-list";
 import { RootState } from "@/app/lib/stores";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteAccount, filter } from "@/app/lib/stores/slices/accountsSlice";
+import { deleteAccount, setQuery, setCurrentPage } from "@/app/lib/stores/slices/accountsSlice";
 import { Link } from "@/i18n/routing";
 import { useTranslations } from 'next-intl';
+import clsx from "clsx";
 
 const AccountPage = () => {
-  const accounts = useSelector((state: RootState) =>  state.accounts.filteredAccounts);
-  const q = useSelector((state: RootState) =>  state.accounts.q);
+  const { accounts, q, currentPage, itemsPerPage } = useSelector((state: RootState) =>  state.accounts);
   const dispatch = useDispatch();
   const t = useTranslations('Account');
+  const totalPages = Math.ceil(accounts.length / itemsPerPage);
+
+  const filteredAccounts = accounts.filter((account) => 
+    account.firstname.toLocaleLowerCase().includes(q) ||
+    account.lastname.toLocaleLowerCase().includes(q)
+  );
+
+  const startIndex = (currentPage * itemsPerPage) - itemsPerPage;
+  const lastIndex = (currentPage * itemsPerPage);
+  const currentAccounts = filteredAccounts.slice(startIndex, lastIndex);
 
   const handleDelete = (id: number) => {
     dispatch(deleteAccount(id));
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(filter(e.currentTarget.value));
+    dispatch(setQuery(e.currentTarget.value));
+  };
+
+  const handlePrevious = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const page = (currentPage - 1 < 0 ? 0 : currentPage - 1);
+    dispatch(setCurrentPage(page));
+  };
+
+  const handleNext= (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    const page = (currentPage + 1 > totalPages ? currentPage : currentPage + 1);
+    dispatch(setCurrentPage(page));
   };
 
   return (
@@ -45,8 +67,21 @@ const AccountPage = () => {
           value={q} />
       </div>
       <AccountsList
-        accounts={accounts} 
+        accounts={currentAccounts}
         onDelete={handleDelete} />
+        
+      <nav aria-label="...">
+        <ul className="pagination">
+          <li className={clsx("page-item", { "disabled": currentPage == 1})}>
+            <a className="page-link" onClick={handlePrevious}>&laquo;</a>
+          </li>
+          <li className={clsx("page-item", { "disabled": currentPage == totalPages})}>
+            <a className="page-link" onClick={handleNext}>&raquo;</a>
+          </li>
+        </ul>
+      </nav>
+
+      { t('page') } {currentPage} { t('of') } {totalPages}
     </>
   );
 }
